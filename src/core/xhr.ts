@@ -8,7 +8,7 @@ import { isFormData } from '../helpers/util';
 export default function xhr (config: AxiosRequestConfig): AxiosPromise {
     return new Promise((resolve, reject) => {
         const { data = null, url, method = 'get', headers, responseType, timeout, cancelToken, withCredentials, 
-            xsrfCookieName, xsrfHeaderName, onDownloadProgress, onUploadProgress
+            xsrfCookieName, xsrfHeaderName, onDownloadProgress, onUploadProgress, auth, validateStatus
         } = config
   
         const request = new XMLHttpRequest();
@@ -96,7 +96,11 @@ export default function xhr (config: AxiosRequestConfig): AxiosPromise {
                     headers[xsrfHeaderName] = xsrfValue;
                 }
             }
-        
+            
+            if(auth) {
+                headers['Authorization'] = 'Basic ' + btoa(auth.username+ ':' + auth.password) 
+            }
+
             Object.keys(headers).forEach((name) => {
                 if (data === null && name.toLowerCase() === 'content-type') {
                     delete headers[name]
@@ -117,7 +121,7 @@ export default function xhr (config: AxiosRequestConfig): AxiosPromise {
         }
 
         function handleResponse(response: AxiosResponse) {
-            if(response.status >= 0 && response.status <300) {
+            if(!validateStatus || validateStatus(response.status)) {
                 resolve(response);
             }else{
                 reject(createError(`Requset faild with status code ${response.status}`, config, null, request, response))
